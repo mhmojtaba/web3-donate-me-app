@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-
-
 contract donateme {
+
     struct donate{
         string message;
         address sender;
         uint256 timestamp;
     }
-
+ 
     uint256 totalDonates;
     address payable owner;
+
+    donate[] public allDonates;
 
     event donateMe(string message, address indexed sender, uint256 timestamp);
       constructor(){
@@ -24,12 +25,19 @@ contract donateme {
         totalDonates +=1;
 
         payable(owner).transfer(msg.value);
+        
+        allDonates.push(donate(_message, msg.sender, block.timestamp));
+    
 
         emit donateMe(_message, msg.sender, block.timestamp);
       }
 
-function getTotalDonates() view public returns (uint256) {
-    return totalDonates;
-}
+      function getTotalDonates() view public returns (uint256) {
+        return totalDonates;
+      }
+function getDonate(uint _index) public view returns (string memory,address,uint256) {
+        require(_index < allDonates.length, "Index out of bounds");
+        return (allDonates[_index].message, allDonates[_index].sender, allDonates[_index].timestamp);
+    }
 
 }
