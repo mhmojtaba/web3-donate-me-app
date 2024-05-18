@@ -92,7 +92,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/deploym
 
 
 ```bash
-thirdweb => interact with smart contract
+thirdweb => deploy and interact with smart contract
 # and
 react-hot-toast => make notification alert
 #and
