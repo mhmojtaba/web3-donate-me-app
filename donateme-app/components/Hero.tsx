@@ -2,9 +2,9 @@
 import { chain } from "@/utils/chain";
 import { client } from "@/utils/client";
 import { contract } from "@/utils/contract";
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { prepareContractCall, toWei } from "thirdweb";
+import { prepareContractCall, readContract, toWei } from "thirdweb";
 import {
 	ConnectButton,
 	ConnectEmbed,
@@ -14,10 +14,19 @@ import {
 	useReadContract,
 } from "thirdweb/react";
 import DonateForm from "./DonateForm";
+import Skeleton from "./Skeleton";
 
-const Hero = () => {
+interface TXSData {
+	message: string;
+	sender: string;
+	timestamp: bigint;
+}
+
+const Hero: () => JSX.Element = () => {
 	const [tipAmount, setTipAmount] = useState(0);
 	const [message, setMessage] = useState("");
+	const [txs, setTxs] = useState<TXSData[]>([]);
+	const [loading, setLoading] = useState(false);
 
 	const account = useActiveAccount();
 
@@ -30,16 +39,44 @@ const Hero = () => {
 		method: "getTotalDonates",
 	});
 
+	const total: number = Number(totalDonates);
+	console.log(total);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	useEffect(() => {
+		const getDonates = async () => {
+			setLoading(true);
+			if (totalDonates) {
+				for (let index = 0; index < total; index++) {
+					const donates = await readContract({
+						contract: contract,
+						method: "getDonate",
+						params: [BigInt(index)],
+					});
+
+					setTxs((prev) => [
+						...prev,
+						{
+							message: donates[0],
+							sender: donates[1],
+							timestamp: donates[2],
+						},
+					]);
+				}
+			}
+			setLoading(false);
+		};
+		getDonates();
+	}, [totalDonates]);
+
 	const { data: allEvent, refetch: refetchEvent } = useContractEvents({
 		contract: contract,
 	});
 
-	// console.log(allEvent);
+	console.log(txs);
+	console.log(loading);
 
 	const truncateAddress = (address: string) => {
-		return `${address.toString().slice(0, 6)}......${address
-			.toString()
-			.slice(-4)}`;
+		return `${address.slice(0, 6)}......${address.slice(-4)}`;
 	};
 
 	const convertDate = (timestamp: bigint) => {
@@ -50,7 +87,7 @@ const Hero = () => {
 		<>
 			{account ? (
 				<div className="w-96 md:w-1/2 md:max-w-screen-sm">
-					<div className="p-4 w-full border border-[#252525] rounded-xl text-center">
+					<div className="p-4 w-full border border-[#434343]/90 rounded-xl text-center">
 						<ConnectButton
 							client={client}
 							chain={chain}
@@ -100,38 +137,46 @@ const Hero = () => {
 							{isGettingTotal ? (
 								<p className="animate-pulse">Loading...</p>
 							) : (
-								<p>Total Donates : {totalDonates?.toString()} </p>
+								<p>Total Donates : {totalDonates?.toString() || 0} </p>
 							)}
 						</h3>
-						<p className=" text-lg text-gray-400">latest Donates:</p>
-						{allEvent &&
-							allEvent.length > 0 &&
-							[...allEvent].reverse().map((e, index) => (
-								<div
-									className="flex flex-col gap-2 
-									border border-[#efefef]/40 rounded-md p-3 my-2 
-									items-stretch justify-center w-full "
-									// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-									key={index}
-								>
-									<div className="flex justify-between items-center text-slate-300 ">
-										<p>
-											{/* @ts-ignore */}
-											{truncateAddress(e?.args?.sender)}
-										</p>
-										<p>
-											{/* @ts-ignore */}
-											{convertDate(e?.args?.timestamp)}
-										</p>
-									</div>
-									<div className="flex justify-between items-center text-white text-2xl">
-										<p>
-											{/* @ts-ignore */}
-											{e?.args?.message}
-										</p>
-									</div>
-								</div>
-							))}
+						{loading ? (
+							<Skeleton />
+						) : (
+							<>
+								{txs && txs.length > 0 && (
+									<p className=" text-lg text-gray-400">latest Donates:</p>
+								)}
+								{txs &&
+									txs.length > 0 &&
+									[...txs].reverse().map((e, index) => (
+										<div
+											className="flex flex-col gap-2 
+								border border-[#efefef]/40 rounded-md p-3 my-2 
+								items-stretch justify-center w-full "
+											// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+											key={index}
+										>
+											<div className="flex justify-between items-center text-slate-300 ">
+												<p>
+													{/* @ts-ignore */}
+													{truncateAddress(e?.sender)}
+												</p>
+												<p>
+													{/* @ts-ignore */}
+													{convertDate(e?.timestamp)}
+												</p>
+											</div>
+											<div className="flex justify-between items-center text-white text-2xl">
+												<p>
+													{/* @ts-ignore */}
+													{e?.message}
+												</p>
+											</div>
+										</div>
+									))}
+							</>
+						)}
 					</div>
 				</div>
 			) : (

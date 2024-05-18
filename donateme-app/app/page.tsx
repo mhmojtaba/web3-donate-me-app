@@ -9,7 +9,7 @@ export default function Home() {
 				className="mb-4 text-3xl font-bold bg-gradient-to-r
 			from-blue-600 via-green-500 to-indigo-400 bg-clip-text text-transparent"
 			>
-				Donate me some
+				Donate Me ...
 			</h2>
 			<Hero />
 			<Footer />

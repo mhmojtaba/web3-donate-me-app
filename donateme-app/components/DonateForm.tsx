@@ -44,7 +44,7 @@ const DonateForm = ({
 					placeholder="leave your message here ...."
 					onChange={(e) => setMessage(e.target.value)}
 					className="w-full border border-gray-400 rounded-2xl 
-									px-4 py-1 outline-none resize-none"
+									px-4 py-2 outline-none resize-none"
 				/>
 			</div>
 		</>
